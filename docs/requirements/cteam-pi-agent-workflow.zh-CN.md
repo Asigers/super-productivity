@@ -12,7 +12,7 @@
 职责边界：
 
 - **CTeam**：公司工单的事实来源。本期只读，不向 CTeam 写入评论、状态、指派或其他变更。
-- **Super Productivity**：唯一的个人任务管理入口。继续负责 Task、Project、标签、子任务、计划、看板、时间追踪和完成状态。
+- **Super Productivity**：唯一的个人任务管理入口。继续负责 Task、Project、标签、子任务、计划、看板、时间追踪和完成状态；其中现有 Project 同时作为 CTeam 项目映射、代码仓库配置和项目级 AI 上下文的组织边界。
 - **Pi Agent**：围绕某个 Super Productivity Task 执行代码级分析；后续可在用户明确授权后执行开发工作。
 - **集成层**：负责同步、来源映射、Pi 调度和分析数据持久化，不建立平行的任务管理模型。
 
@@ -32,7 +32,7 @@
 
 1. 定时查询嘉为蓝鲸 DevOps / CTeam 中分配给当前用户的工作项。
 2. 将 CTeam 工作项通过现有 Issue Provider / 外部任务导入机制创建或更新为原生 Super Productivity Task。
-3. 根据明确配置的 CTeam 项目到 Super Productivity Project、Git 仓库的映射，将任务放入正确的现有 Project。
+3. 根据明确配置的 CTeam 项目到现有 Super Productivity Project 的映射，将任务放入正确的 Project；每个 Project 可以配置多个允许 Pi 访问的 Git 仓库及项目级 AI 上下文。
 4. 对新工单自动派发 Pi Agent 做第一轮代码级只读分析。
 5. 在原生 Task Detail 中展示 CTeam 来源信息、AI 分析报告和 Pi 执行摘要。
 6. 在现有 Task List / 搜索 / 筛选中支持按来源和 AI 状态过滤，不建立新的任务列表。
@@ -58,14 +58,17 @@
 ### 3.1 首次同步与 Task 创建
 
 1. 用户在现有 Issue Provider / Integrations 设置中配置 CTeam 连接和只读认证。
-2. 用户在现有 Project 设置中，将 CTeam 项目映射到一个已存在的 Super Productivity Project，并配置对应本地 Git 仓库。
-3. Poller 定时查询分配给当前用户的工作项。
-4. CTeam Adapter 将外部工作项转换为现有 Issue Provider 能够导入的任务数据。
-5. 复用 Super Productivity 原有任务创建/更新路径，将工单创建为原生 Task，放入映射的 Project。
-6. 通过来源实例、工作项类型和工作项 ID 建立稳定映射，确保重复同步不会创建重复 Task。
-7. 新工单进入原有 Task List 和 Project；用户可以像管理普通 Task 一样安排、计时、拆分、标记和完成它。
+2. 用户在一个已存在的 Super Productivity Project 设置中，关联一个或多个 CTeam 项目，并配置该 Project 对应的一个或多个 Git 仓库。
+3. 用户可在该 Project 中维护经过确认的项目级 AI 上下文，例如架构说明、技术栈、模块索引、开发约定和测试说明。
+4. Poller 定时查询分配给当前用户的工作项。
+5. CTeam Adapter 根据 CTeam 项目映射找到目标 Super Productivity Project。
+6. 复用 Super Productivity 原有任务创建/更新路径，将工单创建为该 Project 下的原生 Task。
+7. 通过来源实例、工作项类型和工作项 ID 建立稳定映射，确保重复同步不会创建重复 Task。
+8. 新工单进入原有 Task List 和 Project；用户可以像管理普通 Task 一样安排、计时、拆分、标记和完成它。
 
-如果 CTeam 项目尚未映射到 Super Productivity Project，不应自动创建一套新的项目管理结构。该工作项应保留在同步待处理记录中，并在现有集成设置/诊断区域提示用户补充映射；映射完成后再导入。
+如果 CTeam 项目尚未映射到 Super Productivity Project，不应自动创建 Project 或独立 Inbox。该工作项应保留在同步待处理记录中，并在现有集成设置/诊断区域提示用户补充映射；映射完成后再导入。
+
+映射规则：一个 CTeam 项目在同一个 CTeam 实例内默认只映射到一个 Super Productivity Project，以避免来源归属歧义；一个 Super Productivity Project 可以汇集多个 CTeam 项目。首期不支持按工单类型或字段把同一个 CTeam 项目拆分到多个 Super Productivity Project。
 
 ### 3.2 新工单自动分析
 
@@ -162,13 +165,83 @@ CTeam 状态、Super Productivity 原生 Task 状态、AI 分析状态和 Pi 执
 
 新工单不需要被放入独立 Inbox。它直接进入映射的现有 Project 和 Task List；用户可以用来源筛选找到它。
 
-### 5.2 Project
+### 5.2 Project：任务组织、外部映射与 AI 上下文边界
 
-- CTeam 项目映射到用户已存在的 Super Productivity Project。
-- Project 设置中增加 CTeam 项目 ID 和本地仓库路径配置。
-- 同一个 CTeam 项目默认映射到一个 Super Productivity Project；具体是否允许多个仓库，应在配置模型中支持一对多仓库映射。
-- 不因导入工单自动创建大量 Project。
-- 未映射的来源项目在集成诊断中提示，不擅自创建项目。
+Super Productivity 原有 Project 不只是任务分组；在本集成中，它同时承担外部项目映射、代码仓库组织和项目级 AI 上下文的职责。它仍然是 Super Productivity 原生 Project，不另建一套项目管理模型。
+
+#### 5.2.1 CTeam 项目映射
+
+- 在现有 Project Settings 中配置 CTeam 实例和一个或多个 CTeam 项目 ID。
+- 一个 CTeam 项目在同一个 CTeam 实例内默认只能映射到一个 Super Productivity Project，避免同一工单被导入多个 Project。
+- 一个 Super Productivity Project 可以汇集多个 CTeam 项目，例如多个团队子项目共同归属于同一个个人工作项目。
+- 首期不支持按工单类型、标签或其他规则将同一个 CTeam 项目拆分到多个 Super Productivity Project；如未来确有需要，再增加显式路由规则。
+- 不因 CTeam 项目自动创建 Super Productivity Project。未映射项目在现有集成诊断区域提示用户处理。
+- 一个 Project 可以同时包含普通 Task 和多个 CTeam 项目导入的 Task。
+
+#### 5.2.2 Project 到 Git 仓库映射
+
+一个 Super Productivity Project 可以关联多个 Git 仓库。每个仓库配置至少包括：
+
+- 稳定的逻辑仓库标识和显示名称。
+- 预期 Git remote URL，用于校验本地目录是否指向正确仓库。
+- 默认分支及可选的分析分支策略。
+- 仓库用途或模块说明，例如后端服务、前端应用、公共组件。
+- 是否允许 Pi 只读访问；首期所有仓库均为只读。
+- 仓库优先级或分析顺序（可选）。
+
+本地路径必须按设备分别保存，不应将 Mac 的路径同步到 Windows，也不应把本地绝对路径作为跨设备共享的 Project 数据。例如，同一个逻辑仓库可以分别配置 macOS 路径和 Windows 路径。Pi 访问仓库前必须验证路径存在，并校验 Git remote 与配置的预期仓库一致；校验失败时停止访问并提示用户，不得自行搜索或猜测替代目录。
+
+Project 可以关联多个仓库，但 Pi 只能访问当前 Project 明确配置并授权的仓库。分析报告必须记录实际使用的仓库、分支和 Commit。
+
+#### 5.2.3 Project 级 AI 上下文
+
+在现有 Project Settings 中增加可选的项目级 AI 上下文，用于让不同 Task 的分析共享稳定、经过确认的项目知识。建议包含：
+
+- 项目目标、业务边界和系统职责。
+- 技术栈、主要服务/应用和模块索引。
+- 架构说明、关键调用链和系统依赖。
+- 代码规范、目录约定和重要设计约束。
+- 构建、测试、Lint 和本地验证方式。
+- 项目术语、缩写和业务概念说明。
+- 经用户确认的项目级分析指引和注意事项。
+- 可选的项目文档引用或本地文档路径。
+
+项目级上下文必须与 Project 绑定，不得跨 Project 自动共享。文档路径属于设备本地配置；可同步的文本说明、逻辑仓库元数据和项目指引应遵循 Super Productivity 现有 Project 数据同步机制。若现有同步机制无法安全同步某类内容，M0 应明确其存储边界，不能假定所有设置都会自动跨设备同步。
+
+**知识维护规则：**
+
+- 项目上下文以用户维护或明确批准的内容为准。
+- Pi 可以提出“建议加入项目知识”的变更，但不能把未经验证的分析结论自动沉淀为长期项目事实。
+- 项目上下文应有版本或更新时间；每次分析记录使用的上下文版本。
+- 用户修改仓库映射、关键架构说明或分析规则后，相关旧报告可以标记为可能过期；不应因此无差别重跑该 Project 下所有 Task。
+- 项目级上下文是分析参考，不是高于用户当前明确指令的命令。若 Task 的明确要求与通用项目指引冲突，应遵循用户对该 Task 的明确要求，并在报告中指出冲突。
+
+#### 5.2.4 Task 分析时的上下文组合
+
+每次 Pi 分析按以下范围组装上下文：
+
+1. 当前 Task 的工单描述、验收条件、相关评论和附件。
+2. 该 Task 所属 Super Productivity Project 的项目级 AI 上下文。
+3. 该 Project 显式配置且与本 Task 相关的 Git 仓库、分支和当前 Commit。
+4. 用户对当前 Task 的额外指示。
+
+不同 Project 的项目知识和仓库访问范围必须隔离。不同 Task 可以复用同一 Project 的只读项目知识，但默认不共享彼此的 Pi 对话历史。Task 专属 Session 负责保持单张工单的分析连续性，Project 上下文负责提供稳定的共享背景，两者不可混为一个长期共享 Session。
+
+#### 5.2.5 Project 配置与跨设备边界
+
+建议在现有 Project Settings 中组织为以下配置区，不新增独立项目管理页面：
+
+- **CTeam Projects**：关联的 CTeam 实例和项目 ID。
+- **Repositories**：逻辑仓库、remote URL、默认分支、用途说明和本机路径。
+- **AI Project Context**：项目说明、技术栈、架构知识、开发约定、测试说明和文档引用。
+
+配置数据按性质区分：
+
+- 可跨设备共享：CTeam 项目逻辑映射、逻辑仓库标识、remote URL、默认分支、项目级 AI 文本上下文（须确认现有同步机制和公司数据政策允许）。
+- 设备本地保存：仓库绝对路径、机器专属运行参数和本地文档路径。
+- 系统凭证管理器保存：CTeam Token、Pi RPC 凭证等秘密信息。
+
+不得把凭证或机器专属绝对路径写入可同步的 Project 数据。
 
 ### 5.3 Boards
 
@@ -230,7 +303,7 @@ AI 报告是独立、版本化的数据，不追加到 Task Notes。完整 Pi �
 | 现有设置位置 | 增加配置 |
 |---|---|
 | Issue Providers / Integrations | CTeam 服务地址、认证方式、当前用户、连接测试、轮询间隔、同步范围 |
-| Project Settings | CTeam 项目 ID、对应本地 Git 仓库路径、默认分支、映射验证 |
+| Project Settings | CTeam 项目映射、多个逻辑 Git 仓库、remote 校验、设备本地路径、默认分支、项目级 AI 上下文及映射验证 |
 | AI / Agent 或现有集成设置 | Pi RPC 地址、认证、模型/Agent 选择、最大并发数、超时、Session 策略 |
 | Notifications | 关键决策、资料阻塞、严重风险、无法恢复的 Agent 故障通知 |
 | 现有诊断/日志区域 | 同步历史、失败原因、重试和最近成功时间 |
@@ -259,9 +332,11 @@ Pi Agent 输入包括：
 - 仓库当前 Commit、分支和工作区状态。
 - 允许提供的项目文档和必要上下文。
 
-仓库映射必须由用户在对应 Super Productivity Project 设置中明确配置。禁止根据工单标题、项目名称或模型猜测本地路径。
+仓库映射必须由用户在对应 Super Productivity Project 设置中明确配置。一个 Project 可以关联多个仓库；Pi 可根据工单涉及的模块，从该 Project 的允许列表中选择一个或多个仓库，但必须说明选择依据。禁止访问其他 Project 的仓库，也禁止根据工单标题、项目名称或模型猜测本地路径。
 
-如果没有仓库映射或仓库不可访问，只执行工单文本层面的分析，并明确标记缺少代码上下文，不得假装完成代码级分析。
+每次分析还应加载该 Project 当前有效的项目级 AI 上下文，但只加载该 Project 的内容。Task 专属输入、Project 级背景和仓库代码证据应在报告中区分来源。分析记录至少保存 Project ID、项目上下文版本、实际使用的仓库、分支和 Commit。
+
+如果没有仓库映射或仓库不可访问，只执行工单文本层面的分析，并明确标记缺少代码上下文，不得假装完成代码级分析。若 Project 上下文缺失，也应正常分析可用资料，并明确说明缺少项目背景，不得编造架构信息。
 
 ### 6.3 分析任务类型
 
@@ -366,7 +441,8 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 - CTeam Poll Scheduler：定时同步、手动同步、重试。
 - CTeam Adapter：认证、查询、分页、字段映射。
 - Task Sync Service：来源去重、原生 Task 创建/更新、字段冲突检测。
-- Project / Repository Mapper：CTeam 项目到 SP Project 和本地 Git 仓库的映射。
+- Project Context Service：读取指定 SP Project 的 CTeam 项目映射、允许访问的仓库和版本化 AI 上下文。
+- Project / Repository Mapper：CTeam 项目到 SP Project 的映射，以及逻辑仓库到设备本地路径的解析和 remote 校验。
 - Pi RPC Adapter：创建/恢复 Session、派发分析、停止任务、获取执行状态。
 - Analysis Service：提示词模板、分析触发、报告结构校验和版本管理。
 - Notification Adapter：将决策、阻塞和风险事件接入现有通知机制。
@@ -381,7 +457,9 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 - `analysis_report`：结构化报告及历史版本。
 - `agent_event`：可审计的执行事件摘要。
 - `sync_checkpoint`：增量游标、最近成功时间和同步错误。
-- `project_repository_mapping`：仅当现有 Project 设置无法承载时，保存 CTeam 项目、SP Project 和本地仓库映射。
+- Project 扩展配置：优先作为现有 Super Productivity Project 的可选扩展字段保存 CTeam 项目映射、逻辑仓库配置和项目级 AI 上下文；只有现有 Project 模型不适合承载时，才使用以 Project ID 关联的轻量 sidecar。
+- 设备本地仓库路径：单独保存在设备本地配置中，不进入跨设备同步数据。
+- 项目上下文版本元数据：记录上下文版本/更新时间，供分析报告追溯。
 
 不得建立完整的 `work_item`、`work_item_task`、独立任务状态或第二套 Project 表。来源工单的完整描述、评论和附件优先通过 CTeam API 按需读取；如需缓存，应明确缓存用途、过期策略和数据清理方式。
 
@@ -425,9 +503,11 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 
 ### M0：代码结构与 API 技术验证
 
-- 检查当前版本 Task 数据模型、持久化和迁移机制。
+- 检查当前版本 Task 和 Project 数据模型、持久化、跨设备同步及迁移机制。
 - 找到现有 Issue Provider 的查询、导入、更新和身份认证扩展点。
-- 找到 Task List、Board、Task Detail、搜索/筛选和 Settings 的真实组件入口。
+- 确认 Project Settings 如何扩展、哪些 Project 字段会跨设备同步，哪些配置必须本地保存。
+- 找到 Task List、Board、Task Detail、搜索/筛选、Project Settings 和全局 Settings 的真实组件入口。
+- 验证一个 Project 关联多个 CTeam 项目和多个 Git 仓库的配置模型，以及项目级 AI 上下文的加载和版本管理方式。
 - 确认 Electron Main、IPC、后台生命周期和系统托盘实现方式。
 - 验证 CTeam 只读 API、当前用户筛选、分页和增量能力。
 - 验证 Pi RPC 的创建/恢复 Session、发送任务、停止和读取事件方式。
@@ -440,6 +520,7 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 - CTeam 配置位于现有 Issue Provider / Integrations 设置中。
 - 只拉取分配给当前用户的工作项。
 - 工单通过现有导入路径创建为原生 Task，并进入映射的现有 Project。
+- 支持多个 CTeam 项目汇入同一个 SP Project；同一 CTeam 项目不会在同一实例内被重复映射到多个 SP Project。
 - 同一来源工单始终映射到同一个 Task，不重复创建。
 - 未映射项目不会自动创建独立项目或 Inbox，而是在现有集成诊断中提示。
 - 来源字段更新不会覆盖用户备注、计划、子任务、时间记录和个人状态。
@@ -452,7 +533,9 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 - 新导入的 CTeam Task 自动创建或恢复专属 Pi Session。
 - 不同 Task 的 Session 隔离。
 - 工单变化能够去重、合并，并在必要时延续原 Session 分析。
-- 根据显式仓库映射执行代码级只读分析。
+- 根据所属 Project 的显式仓库映射执行代码级只读分析，支持一个 Project 下多个仓库。
+- 分析能够加载该 Project 的版本化 AI 上下文，且不会混入其他 Project 的知识或仓库。
+- Mac 和 Windows 可以为同一个逻辑仓库配置各自的本地路径；访问前校验 Git remote。
 - 支持并发限制、失败重试和应用重启恢复。
 - 分析完成后保存结构化报告和执行事件。
 - 分析过程不改变 Task 的个人状态或 Board 列。
@@ -465,7 +548,7 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 - 评论和附件可按需加载，不污染 Task Notes。
 - 在同一详情中查看 AI 分析摘要、代码证据、假设、缺失信息和报告历史。
 - 可以继续分析、重新分析、停止任务或查看 Pi Session（以 RPC 能力为准）。
-- 报告保留工单版本和仓库 Commit，支持过期标记。
+- 报告保留工单版本、仓库/Commit 和 Project AI 上下文版本，支持过期标记。
 - 普通 Task 不显示无意义的 CTeam / AI 区域，原有详情体验无回归。
 
 ### M4：原生筛选、通知与可观测性
@@ -490,8 +573,9 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 ## 12. 待确认事项
 
 1. 公司 CTeam 的准确产品版本、API 文档和认证方式。
-2. CTeam 项目与现有 Super Productivity Project 的映射规则。
-3. 每个 CTeam 项目对应一个还是多个本地 Git 仓库，以及默认分支策略。
+2. 多个 CTeam 项目汇入一个 Super Productivity Project 的映射规则及边界。
+3. 每个 Project 关联多个 Git 仓库时的选择、优先级和默认分支策略。
+4. 项目级 AI 上下文的维护方式、允许同步的内容及版本管理策略。
 4. 应用最小化到托盘后是否继续同步和调度。
 5. 允许用于工单和代码分析的模型服务及数据边界。
 6. 评论和附件是否纳入第一版分析输入，以及附件类型和大小限制。
@@ -502,10 +586,12 @@ Attention 不是第二套任务列表或看板。它只是一种任务标记/通
 完成后，用户应该仍然只使用 Super Productivity 原来的工作方式：
 
 - 打开原有 Task List，就能看到导入的 CTeam 工单和普通任务。
-- 打开原有 Project，就能看到映射到该项目的工单。
+- 打开原有 Project，就能看到映射到该项目的工单、项目级 CTeam 关联和已配置的仓库上下文。
 - 使用原有 Board、Planner 和 Time Tracking 管理 CTeam Task。
 - 打开原有 Task Detail，就能看到外部工单信息、AI 分析和 Pi 执行摘要。
 - 使用现有筛选找到 CTeam Task、分析中任务或需要人工介入的任务。
+- 一个原有 Project 可以组织普通 Task、多个 CTeam 项目的工单、多个代码仓库和经确认的项目级 AI 知识。
+- Pi 在分析某个 Task 时自动复用其所属 Project 的背景知识，但不共享其他 Task 的对话历史。
 - 不需要维护第二套 Inbox、第二套看板、第二套 Task 状态或第二套项目体系。
 
 **最终目标：让 Super Productivity 原有 Task 获得外部工单同步、AI 理解和 Agent 执行能力，而不是让用户学习和维护另一套工作管理产品。**
