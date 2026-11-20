@@ -1,0 +1,28 @@
+{
+  "id": "cteam-issue-provider",
+  "name": "CTeam",
+  "version": "0.1.0",
+  "manifestVersion": 1,
+  "minSupVersion": "19.3.1",
+  "description": "Read-only CTeam tasks. Open plugin settings to configure credentials on this device.",
+  "type": "issueProvider",
+  "icon": "icon.svg",
+  "iFrame": true,
+  "isSkipMenuEntry": true,
+  "permissions": ["http"],
+  "hooks": [],
+  "i18n": {
+    "languages": ["en"]
+  },
+  "issueProvider": {
+    "pollIntervalMs": 1800000,
+    "icon": "sp",
+    "humanReadableName": "CTeam",
+    "issueStrings": {
+      "singular": "Work item",
+      "plural": "Work items"
+    },
+    "defaultAutoAddToBacklog": false,
+    "allowPrivateNetwork": true
+  }
+}

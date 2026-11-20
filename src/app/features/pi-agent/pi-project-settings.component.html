@@ -1,0 +1,71 @@
+<h2>{{ T.F.PI_AGENT.TITLE | translate }}</h2>
+@if (!isAvailable) {
+  <p>{{ T.F.PI_AGENT.UNAVAILABLE | translate }}</p>
+} @else if (loading()) {
+  <p role="status">{{ T.F.PI_AGENT.LOADING | translate }}</p>
+} @else {
+  <p>{{ T.F.PI_AGENT.HELP | translate }}</p>
+  <mat-checkbox
+    [ngModel]="config().enabled"
+    (ngModelChange)="update({ enabled: $event })"
+    [disabled]="saving()"
+    >{{ T.F.PI_AGENT.ENABLED | translate }}</mat-checkbox
+  >
+  <mat-checkbox
+    [ngModel]="config().notifyOnImport ?? false"
+    (ngModelChange)="setImportNotifications($event)"
+    [disabled]="saving()"
+    >{{ T.F.PI_AGENT.NOTIFY_IMPORTS | translate }}</mat-checkbox
+  >
+  <p>{{ T.F.PI_AGENT.NOTIFY_IMPORTS_HELP | translate }}</p>
+  <div class="pi-fields">
+    <mat-form-field>
+      <mat-label>{{ T.F.PI_AGENT.DIRECTORY | translate }}</mat-label>
+      <input
+        matInput
+        [ngModel]="config().workingDirectory"
+        (ngModelChange)="update({ workingDirectory: $event })"
+      />
+      <mat-hint>{{ T.F.PI_AGENT.DIRECTORY_HELP | translate }}</mat-hint>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ T.F.PI_AGENT.EXECUTABLE | translate }}</mat-label>
+      <input
+        matInput
+        [ngModel]="config().executable"
+        (ngModelChange)="update({ executable: $event })"
+      />
+      <mat-hint>{{ T.F.PI_AGENT.EXECUTABLE_HELP | translate }}</mat-hint>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ T.F.PI_AGENT.MODEL | translate }}</mat-label>
+      <input
+        matInput
+        [ngModel]="config().model"
+        (ngModelChange)="update({ model: $event })"
+      />
+      <mat-hint>{{ T.F.PI_AGENT.MODEL_HELP | translate }}</mat-hint>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ T.F.PI_AGENT.PROMPT | translate }}</mat-label>
+      <textarea
+        matInput
+        rows="10"
+        [ngModel]="config().prompt"
+        (ngModelChange)="update({ prompt: $event })"
+      ></textarea>
+      <mat-hint>{{ T.F.PI_AGENT.PROMPT_HELP | translate }}</mat-hint>
+    </mat-form-field>
+  </div>
+}
+@if (saving()) {
+  <p role="status">{{ T.F.PI_AGENT.SAVING | translate }}</p>
+}
+@if (error(); as message) {
+  <div
+    class="callout callout--danger"
+    role="alert"
+  >
+    <p>{{ message | translate }}</p>
+  </div>
+}

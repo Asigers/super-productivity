@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Subscription } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { PluginService } from '../../plugin.service';
 import { PluginBridgeService } from '../../plugin-bridge.service';
@@ -31,6 +31,8 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { T } from '../../../t.const';
 import { PluginLog } from '../../../core/log';
 import { LayoutService } from '../../../core-ui/layout/layout.service';
+import { DataInitStateService } from '../../../core/data-init/data-init-state.service';
+import { SyncWrapperService } from '../../../imex/sync/sync-wrapper.service';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -87,6 +89,8 @@ export class PluginIndexComponent implements OnInit, OnDestroy {
   private readonly _cleanupService = inject(PluginCleanupService);
   private readonly _translateService = inject(TranslateService);
   private readonly _layoutService = inject(LayoutService);
+  private readonly _dataInit = inject(DataInitStateService);
+  private readonly _sync = inject(SyncWrapperService);
 
   T = T;
 
@@ -168,9 +172,14 @@ export class PluginIndexComponent implements OnInit, OnDestroy {
   }
 
   private async _waitForPluginSystem(): Promise<void> {
-    // Check if plugin system is already initialized
     if (!this._pluginService.isInitialized()) {
-      // Initialize it immediately
+      // Plugin enablement is in the synced store. Match StartupService's gate
+      // so a direct plugin route cannot discover plugins before hydration.
+      await Promise.all([
+        firstValueFrom(this._dataInit.isAllDataLoadedInitially$),
+        firstValueFrom(this._sync.afterCurrentSyncDoneOrSyncDisabled$),
+      ]);
+      if (this._isDestroyed || this._pluginService.isInitialized()) return;
       try {
         await this._pluginService.initializePlugins();
       } catch (error) {

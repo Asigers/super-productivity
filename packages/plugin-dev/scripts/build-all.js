@@ -232,6 +232,25 @@ const plugins = [
     },
   },
   {
+    name: 'cteam-issue-provider',
+    path: 'cteam-issue-provider',
+    copyToAssets: true,
+    buildCommand: async (pluginPath) => {
+      await execAsync(`cd ${pluginPath} && npm run build`);
+      const targetDir = path.join(
+        __dirname,
+        '../../../src/assets/bundled-plugins/cteam-issue-provider',
+      );
+      copyRecursive(path.join(pluginPath, 'dist'), targetDir);
+      assertFilesExist(
+        targetDir,
+        ['manifest.json', 'plugin.js', 'index.html', 'icon.svg', 'i18n/en.json'],
+        'cteam-issue-provider',
+      );
+      return 'Built and copied to assets';
+    },
+  },
+  {
     name: 'github-issue-provider',
     path: 'github-issue-provider',
     copyToAssets: true,

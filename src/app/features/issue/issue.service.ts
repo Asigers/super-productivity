@@ -91,6 +91,10 @@ const isIssueAwaitingNextOccurrence = (
   providedIn: 'root',
 })
 export class IssueService {
+  private readonly _taskImported = new Subject<string>();
+  /** Local successful import only; hydration, remote replay and refresh never emit. */
+  readonly taskImported$ = this._taskImported.asObservable();
+
   private _taskService = inject(TaskService);
   private _pendingRemoteIssueDelete = inject(PendingRemoteIssueDeleteService);
   private _jiraCommonInterfacesService = inject(JiraCommonInterfacesService);
@@ -723,6 +727,7 @@ export class IssueService {
       );
     }
 
+    if (taskId) this._taskImported.next(taskId);
     return taskId;
   }
 

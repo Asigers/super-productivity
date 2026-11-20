@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      main {
+        max-width: 40em;
+        margin: auto;
+        padding: var(--s2);
+      }
+      form,
+      label {
+        display: grid;
+        gap: var(--s);
+      }
+      form {
+        gap: var(--s2);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 data-i18n="AUTH.TITLE"></h1>
+      <p data-i18n="AUTH.HELP"></p>
+      <form id="credentials">
+        <label
+          ><span data-i18n="AUTH.USER"></span
+          ><input
+            id="user"
+            required
+            autocomplete="username"
+        /></label>
+        <label
+          ><span data-i18n="AUTH.TOKEN"></span
+          ><input
+            id="token"
+            type="password"
+            required
+            autocomplete="new-password"
+        /></label>
+        <label
+          ><span data-i18n="AUTH.TENANT"></span
+          ><input
+            id="tenant"
+            autocomplete="off"
+        /></label>
+        <button
+          type="submit"
+          data-i18n="AUTH.SAVE"
+        ></button>
+        <button
+          id="remove"
+          type="button"
+          data-i18n="AUTH.REMOVE"
+        ></button>
+      </form>
+      <p
+        id="status"
+        role="status"
+      ></p>
+    </main>
+    <!-- BUILD:SCRIPT -->
+  </body>
+</html>

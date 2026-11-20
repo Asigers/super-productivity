@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, viewChild } from '@angular/core';
+import { IS_ELECTRON } from '../../../app.constants';
+import { PiProjectSettingsComponent } from '../../pi-agent/pi-project-settings.component';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -41,6 +43,7 @@ export interface WorkContextSettingsDialogData {
     MatDialogActions,
     MatButton,
     TranslatePipe,
+    PiProjectSettingsComponent,
   ],
 })
 export class DialogWorkContextSettingsComponent {
@@ -51,6 +54,8 @@ export class DialogWorkContextSettingsComponent {
   private _matDialogRef =
     inject<MatDialogRef<DialogWorkContextSettingsComponent>>(MatDialogRef);
 
+  readonly IS_ELECTRON = IS_ELECTRON;
+  readonly piSettings = viewChild(PiProjectSettingsComponent);
   T: typeof T = T;
   isProject: boolean = this._data.isProject;
   entityData: Project | Tag;
@@ -156,11 +161,13 @@ export class DialogWorkContextSettingsComponent {
     }
   }
 
-  done(): void {
+  async done(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+    const piSettings = this.piSettings();
+    if (piSettings && !(await piSettings.save())) return;
     this._matDialogRef.close();
   }
 

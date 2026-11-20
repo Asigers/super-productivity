@@ -1,5 +1,7 @@
 import { ipcRenderer, webFrame, contextBridge, webUtils } from 'electron';
 import { ElectronAPI } from './electronAPI.d';
+import { PiTaskAnalysis } from './shared-with-frontend/pi-agent.model';
+import { createPiPreloadApiConsumer } from './shared-with-frontend/pi-preload-api';
 import { IS_GNOME_DESKTOP, IS_GNOME_WAYLAND } from './common.const';
 import { IPC, IPCEventValue } from './shared-with-frontend/ipc-events.const';
 import {
@@ -36,8 +38,14 @@ const _invoke: (channel: IPCEventValue, ...args: unknown[]) => Promise<unknown> 
 ) => ipcRenderer.invoke(channel, ...args);
 
 const consumeJiraApi = createJiraPreloadApiConsumer(_invoke);
+const consumePiAgentApi = createPiPreloadApiConsumer(_invoke, (listener) => {
+  const handler = (_event: unknown, state: PiTaskAnalysis): void => listener(state);
+  ipcRenderer.on(IPC.PI_AGENT_UPDATED, handler);
+  return () => ipcRenderer.removeListener(IPC.PI_AGENT_UPDATED, handler);
+});
 
 const ea: ElectronAPI = {
+  consumePiAgentApi,
   on: (channel: string, listener: (...args: unknown[]) => void) => {
     // NOTE: there is no proper way to unsubscribe apart from unsubscribing all
     ipcRenderer.on(channel, toPayloadOnlyIpcListener(listener));

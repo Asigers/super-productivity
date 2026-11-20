@@ -29,8 +29,11 @@ import {
   AssistantAccessState,
 } from './shared-with-frontend/assistant-access.model';
 import { JiraElectronApi } from './shared-with-frontend/jira-request.model';
+import { PiAgentElectronApi } from './shared-with-frontend/pi-agent.model';
 
 export interface ElectronAPI {
+  consumePiAgentApi(): PiAgentElectronApi | null;
+
   on(channel: string, listener: (...args: unknown[]) => void): void;
 
   // SYNC

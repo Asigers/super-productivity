@@ -10,6 +10,9 @@
     [model]="entityData"
   >
   </formly-form>
+  @if (isProject && IS_ELECTRON) {
+    <pi-project-settings [projectId]="entityData.id"></pi-project-settings>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

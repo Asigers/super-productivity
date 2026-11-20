@@ -232,6 +232,23 @@
     </task-detail-item>
   }
 
+  @if (task().issueType === 'plugin:cteam-issue-provider') {
+    <task-detail-item
+      (collapseParent)="collapseParent()"
+      (keyPress)="onItemKeyPress($event)"
+      [expanded]="true"
+      [type]="'panel'"
+    >
+      <ng-container panel-header>
+        <mat-icon class="panel-header-icon">smart_toy</mat-icon>
+        <span>{{ T.F.PI_AGENT.PANEL_TITLE | translate }}</span>
+      </ng-container>
+      <ng-container panel-content>
+        <pi-task-analysis [task]="task()"></pi-task-analysis>
+      </ng-container>
+    </task-detail-item>
+  }
+
   <task-detail-item
     #noteWrapperElRef
     (collapseParent)="collapseParent()"

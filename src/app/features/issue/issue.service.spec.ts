@@ -360,6 +360,71 @@ describe('IssueService', () => {
     });
   });
 
+  describe('local issue import events', () => {
+    const issue = { id: 'p17/42', title: 'CTeam work item' };
+    const request = {
+      issueDataReduced: issue,
+      issueProviderId: 'cteam-provider-1',
+      issueProviderKey: 'plugin:cteam-issue-provider' as const,
+    };
+
+    beforeEach(() => {
+      pluginRegistrySpy.hasProvider.and.returnValue(true);
+      pluginAdapterSpy.getAddTaskDataForCfg.and.returnValue({
+        title: issue.title,
+        issueId: issue.id,
+        issueWasUpdated: false,
+        issueLastUpdated: 0,
+        issueAttachmentNr: 0,
+        issuePoints: undefined,
+        issueTimeTracked: undefined,
+        isDone: false,
+      });
+      taskServiceSpy.checkForTaskWithIssueEverywhere.and.resolveTo(null);
+      taskServiceSpy.add.and.returnValue('new-cteam-task');
+    });
+
+    it('emits only after a newly imported native Task has been created', async () => {
+      const created: string[] = [];
+      service.taskImported$.subscribe((taskId) => {
+        expect(taskServiceSpy.add).toHaveBeenCalled();
+        created.push(taskId);
+      });
+      const result = await service.addTaskFromIssue(request);
+      expect(result).toBe('new-cteam-task');
+      expect(created).toEqual(['new-cteam-task']);
+    });
+
+    it('also emits for background imports, without a second import action', async () => {
+      const imported = jasmine.createSpy('imported');
+      service.taskImported$.subscribe(imported);
+      await service.addTaskFromIssue({
+        ...request,
+        isAutoImport: true,
+        isAddToBacklog: true,
+      });
+      expect(imported).toHaveBeenCalledOnceWith('new-cteam-task');
+      expect(taskServiceSpy.add).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not emit for an already imported task', async () => {
+      taskServiceSpy.checkForTaskWithIssueEverywhere.and.resolveTo({
+        task: createMockTask({
+          issueType: request.issueProviderKey,
+          issueId: issue.id,
+          issueProviderId: request.issueProviderId,
+        }),
+        subTasks: null,
+        isFromArchive: false,
+      });
+      const imported = jasmine.createSpy('imported');
+      service.taskImported$.subscribe(imported);
+      await service.addTaskFromIssue(request);
+      expect(imported).not.toHaveBeenCalled();
+      expect(taskServiceSpy.add).not.toHaveBeenCalled();
+    });
+  });
+
   describe('addTaskFromIssue - getTaskDefaults', () => {
     const jiraIssue = { id: 'JIRA-1', title: 'Test Jira Issue' };
 

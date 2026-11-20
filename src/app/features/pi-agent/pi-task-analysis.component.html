@@ -1,0 +1,101 @@
+@if (!isAvailable) {
+  <p>{{ T.F.PI_AGENT.UNAVAILABLE | translate }}</p>
+} @else {
+  @if (!configured()) {
+    <p>{{ T.F.PI_AGENT.CONFIGURE | translate }}</p>
+  }
+  @if (statusKey(); as status) {
+    <p role="status">{{ status | translate }}</p>
+  }
+  @if (error() || runError(); as message) {
+    <div
+      class="callout callout--danger"
+      role="alert"
+    >
+      <p>{{ message | translate }}</p>
+    </div>
+  }
+  <mat-form-field>
+    <mat-label>{{ T.F.PI_AGENT.INSTRUCTION | translate }}</mat-label>
+    <textarea
+      matInput
+      rows="3"
+      [(ngModel)]="instruction"
+      [disabled]="running()"
+    ></textarea>
+  </mat-form-field>
+  <div class="pi-actions">
+    @if (running()) {
+      <button
+        mat-button
+        type="button"
+        (click)="stop()"
+        [disabled]="busy()"
+      >
+        {{ T.F.PI_AGENT.STOP | translate }}
+      </button>
+    } @else {
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="start(false)"
+        [disabled]="busy() || !configured() || !issueUrl()"
+      >
+        {{ (latest() ? T.F.PI_AGENT.CONTINUE : T.F.PI_AGENT.START) | translate }}
+      </button>
+      @if (latest()) {
+        <button
+          mat-button
+          type="button"
+          (click)="start(true)"
+          [disabled]="busy() || !configured() || !issueUrl()"
+        >
+          {{ T.F.PI_AGENT.AGAIN | translate }}
+        </button>
+      }
+    }
+  </div>
+  @if (reports().length > 1) {
+    <label>
+      {{ T.F.PI_AGENT.HISTORY | translate }}
+      <select
+        [ngModel]="report()?.id"
+        (ngModelChange)="selectedId.set($event)"
+      >
+        @for (entry of reports(); track entry.id) {
+          <option [value]="entry.id">
+            {{ entry.startedAt | localeDate: 'short' : undefined : locale() }}
+          </option>
+        }
+      </select>
+    </label>
+  }
+  @if (report(); as result) {
+    <p>
+      {{ T.F.PI_AGENT.REPORT_TIME | translate }}:
+      {{ result.startedAt | localeDate: 'short' : undefined : locale() }}
+    </p>
+    @if (!running()) {
+      <button
+        mat-button
+        type="button"
+        (click)="copySessionCommand(result.id)"
+        [disabled]="busy()"
+      >
+        <mat-icon>content_copy</mat-icon>
+        {{ T.F.PI_AGENT.COPY_SESSION_COMMAND | translate }}
+      </button>
+      <p>{{ T.F.PI_AGENT.COPY_SESSION_COMMAND_HELP | translate }}</p>
+    }
+    @if (isOldProject()) {
+      <p>{{ T.F.PI_AGENT.OLD_PROJECT | translate }}</p>
+    }
+    <div
+      class="markdown"
+      markdown
+      [data]="result.markdown"
+    ></div>
+  } @else {
+    <p>{{ T.F.PI_AGENT.NO_REPORT | translate }}</p>
+  }
+}

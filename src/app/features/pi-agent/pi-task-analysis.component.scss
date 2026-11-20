@@ -1,0 +1,12 @@
+:host {
+  display: grid;
+  gap: var(--s);
+  padding: var(--s2);
+}
+
+.pi-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s);
+  margin-bottom: var(--s2);
+}

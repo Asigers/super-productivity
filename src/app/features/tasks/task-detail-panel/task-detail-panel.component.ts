@@ -96,6 +96,7 @@ import {
 import { findNextTaskAfterSubtree } from '../../../util/find-adjacent-focusable';
 import { TaskContextMenuComponent } from '../task-context-menu/task-context-menu.component';
 import { isWontDoTask } from '../util/is-wont-do-task';
+import { PiTaskAnalysisComponent } from '../../pi-agent/pi-task-analysis.component';
 
 @Component({
   selector: 'task-detail-panel',
@@ -131,6 +132,7 @@ import { isWontDoTask } from '../util/is-wont-do-task';
     IssueIconPipe,
     AddSubtaskInputComponent,
     TaskContextMenuComponent,
+    PiTaskAnalysisComponent,
   ],
 })
 export class TaskDetailPanelComponent implements OnInit, AfterViewInit, OnDestroy {

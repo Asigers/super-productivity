@@ -26,6 +26,7 @@ import { selectSyncConfig } from '../../features/config/store/global-config.redu
 import { selectEnabledIssueProviders } from '../../features/issue/store/issue-provider.selectors';
 import { RatePromptService } from '../../features/dialog-please-rate/rate-prompt.service';
 import { JiraElectronBridgeService } from '../../features/issue/providers/jira/jira-electron-bridge.service';
+import { CteamImportService } from '../../features/pi-agent/cteam-import.service';
 
 describe('StartupService', () => {
   let service: StartupService;
@@ -137,6 +138,12 @@ describe('StartupService', () => {
     TestBed.configureTestingModule({
       providers: [
         StartupService,
+        {
+          provide: CteamImportService,
+          useValue: jasmine.createSpyObj<CteamImportService>('CteamImportService', [
+            'init',
+          ]),
+        },
         { provide: ImexViewService, useValue: imexViewServiceSpy },
         { provide: TranslateService, useValue: translateServiceSpy },
         { provide: LocalBackupService, useValue: localBackupServiceSpy },
@@ -204,6 +211,7 @@ describe('StartupService', () => {
 
       flush();
 
+      expect(TestBed.inject(CteamImportService).init).toHaveBeenCalledOnceWith();
       // Deferred init hands the rating prompt off to RatePromptService.
       expect(ratePromptService.init).toHaveBeenCalled();
 

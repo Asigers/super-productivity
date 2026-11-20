@@ -1,0 +1,14 @@
+{
+  "id": "wecom-task-export",
+  "name": "企业微信任务同步",
+  "version": "0.2.0",
+  "manifestVersion": 1,
+  "minSupVersion": "19.3.1",
+  "description": "将选定项目的主任务单向同步到企业微信智能表格。",
+  "author": "Local plugin",
+  "iFrame": true,
+  "isSkipMenuEntry": true,
+  "permissions": ["http", "getTasks", "getAllProjects"],
+  "allowedHosts": ["qyapi.weixin.qq.com"],
+  "hooks": ["dataChanged"]
+}

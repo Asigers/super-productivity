@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TranslateModule } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EMPTY } from 'rxjs';
+import { EMPTY, Observable, of, Subject } from 'rxjs';
 import { signal } from '@angular/core';
 import { PluginIframeMessageType } from '@super-productivity/plugin-api';
 import { PluginIndexComponent } from './plugin-index.component';
@@ -10,6 +10,8 @@ import { PluginService } from '../../plugin.service';
 import { PluginBridgeService } from '../../plugin-bridge.service';
 import { PluginCleanupService } from '../../plugin-cleanup.service';
 import { LayoutService } from '../../../core-ui/layout/layout.service';
+import { DataInitStateService } from '../../../core/data-init/data-init-state.service';
+import { SyncWrapperService } from '../../../imex/sync/sync-wrapper.service';
 
 const PLUGIN_ID = 'test-plugin';
 
@@ -18,6 +20,8 @@ describe('PluginIndexComponent', () => {
   let component: PluginIndexComponent;
   let pluginService: jasmine.SpyObj<PluginService>;
   let pluginBridge: jasmine.SpyObj<PluginBridgeService>;
+  let dataInit: { isAllDataLoadedInitially$: Observable<boolean> };
+  let sync: { afterCurrentSyncDoneOrSyncDisabled$: Observable<void> };
 
   const setup = async (): Promise<void> => {
     pluginService = jasmine.createSpyObj<PluginService>('PluginService', [
@@ -53,6 +57,8 @@ describe('PluginIndexComponent', () => {
       'PluginCleanupService',
       ['registerIframe', 'cleanupPlugin'],
     );
+    dataInit = { isAllDataLoadedInitially$: of(true) };
+    sync = { afterCurrentSyncDoneOrSyncDisabled$: of(undefined) };
 
     await TestBed.configureTestingModule({
       imports: [PluginIndexComponent, NoopAnimationsModule, TranslateModule.forRoot()],
@@ -61,6 +67,8 @@ describe('PluginIndexComponent', () => {
         { provide: PluginBridgeService, useValue: pluginBridge },
         { provide: PluginCleanupService, useValue: cleanupService },
         { provide: LayoutService, useValue: { isPanelResizing: signal(false) } },
+        { provide: DataInitStateService, useValue: dataInit },
+        { provide: SyncWrapperService, useValue: sync },
         { provide: ActivatedRoute, useValue: { paramMap: EMPTY } },
         { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) },
       ],
@@ -91,6 +99,25 @@ describe('PluginIndexComponent', () => {
     await setup();
     expect(getIframe()).toBeTruthy();
     expect(component.isLoading()).toBe(false);
+  });
+
+  it('waits for data hydration and current sync before initializing plugins', async () => {
+    await setup();
+    const hydration = new Subject<boolean>();
+    const syncFinished = new Subject<void>();
+    dataInit.isAllDataLoadedInitially$ = hydration;
+    sync.afterCurrentSyncDoneOrSyncDisabled$ = syncFinished;
+    pluginService.isInitialized.and.returnValue(false);
+    pluginService.initializePlugins.and.resolveTo();
+
+    const pending = component['_waitForPluginSystem']();
+    expect(pluginService.initializePlugins).not.toHaveBeenCalled();
+    hydration.next(true);
+    await Promise.resolve();
+    expect(pluginService.initializePlugins).not.toHaveBeenCalled();
+    syncFinished.next();
+    await pending;
+    expect(pluginService.initializePlugins).toHaveBeenCalledTimes(1);
   });
 
   // Enabling a plugin flips isEnabled before its assets are fetched; opening the

@@ -1,0 +1,20 @@
+{
+  "name": "cteam-issue-provider",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only CTeam issue provider",
+  "scripts": {
+    "quiet": "node ../../../tools/quiet.js",
+    "build": "node ../scripts/build-with-esbuild.js --ui src/ui.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "node --test --test-reporter=spec *.test.cjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@super-productivity/plugin-api": "file:../../plugin-api"
+  }
+}

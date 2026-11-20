@@ -45,8 +45,11 @@ import { DataInitStateService } from '../data-init/data-init-state.service';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- grandfathered layer-boundary debt
 import { OnboardingHintService } from '../../features/onboarding/onboarding-hint.service';
 import { LocalRestApiRouterService } from '../electron/local-rest-api-router.service';
+import { PiAgentBridgeService } from '../electron/pi-agent-bridge.service';
 import { CustomThemeService } from '../theme/custom-theme.service';
 import { UpdateCheckService } from '../update-check/update-check.service';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- startup composes the local import workflow before plugins load
+import { CteamImportService } from '../../features/pi-agent/cteam-import.service';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- grandfathered layer-boundary debt
 import { JiraElectronBridgeService } from '../../features/issue/providers/jira/jira-electron-bridge.service';
 
@@ -90,6 +93,7 @@ export class StartupService {
   private _injector = inject(Injector);
   private _customThemeService = inject(CustomThemeService);
   private _jiraElectronBridge = inject(JiraElectronBridgeService);
+  private readonly _piAgentBridge = inject(PiAgentBridgeService);
 
   constructor() {
     // Claim the privileged Jira IPC capability here, in trusted startup code,
@@ -99,6 +103,8 @@ export class StartupService {
     // alone is bypassable. Once consumed, consumeJiraApi() returns null to
     // everyone else. Do NOT move plugin/3rd-party loading before this call.
     this._jiraElectronBridge.initialize();
+    // Claim Pi's process-launch API before plugins can consume it.
+    this._piAgentBridge.initialize();
 
     // Initialize electron error handler in an effect
     if (IS_ELECTRON) {
@@ -134,6 +140,8 @@ export class StartupService {
       }
     }
 
+    // Subscribe before plugins can import tasks. Existing/synced tasks are not a trigger.
+    this._injector.get(CteamImportService).init();
     this._initBackups();
     this._requestPersistence();
 

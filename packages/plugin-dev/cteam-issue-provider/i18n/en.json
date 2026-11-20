@@ -1,0 +1,32 @@
+{
+  "CFG": {
+    "PROJECT": "CTeam project key",
+    "PROJECT_HELP": "The key from /vteam/<projectKey>/, not the numeric DevOps project ID. Configure one provider per CTeam source project; use its default project to choose the destination. The primary type is required, and additional types can be listed below.",
+    "CLASSIFY": "Work-item classification",
+    "MODEL_TYPE": "Primary model type ID",
+    "ADDITIONAL_TYPES": "Additional work-item types (optional)",
+    "ADDITIONAL_TYPES_HELP": "Add one CLASSIFY:MODEL_TYPE_ID pair per line, such as BUG:688 or DEMAND:693. The primary classification and model type above stay included. Additional classifications discover their own dynamic 经办人 field. Keep each pair unique.",
+    "ASSIGNEE": "Primary type's dynamic 经办人 search field",
+    "EXCLUDED_STATES": "Exclude source states",
+    "EXCLUDED_HELP": "Choose states to exclude for the matching work-item type. No names are hardcoded; an empty selection excludes nothing. Save local credentials in the CTeam plugin settings before loading options."
+  },
+  "ISSUE": {
+    "NUMBER": "Number",
+    "TITLE": "Source title",
+    "STATE": "Source status",
+    "LINK": "Original link"
+  },
+  "AUTH": {
+    "TITLE": "CTeam local credentials",
+    "HELP": "These credentials stay on this device and are excluded from app sync and backups. Local secret storage is not encrypted at rest. They are separate from CWLink's own credentials. After saving, configure the CTeam issue provider in Integrations.",
+    "USER": "DevOps user ID",
+    "TOKEN": "DevOps access token",
+    "TENANT": "Tenant ID (optional)",
+    "SAVE": "Save on this device",
+    "REMOVE": "Remove local credentials",
+    "CONFIGURED": "Local credentials are configured. The token is not displayed.",
+    "SAVED": "Saved on this device.",
+    "REMOVED": "Local credentials removed.",
+    "ERROR": "Could not read or save local credentials."
+  }
+}
